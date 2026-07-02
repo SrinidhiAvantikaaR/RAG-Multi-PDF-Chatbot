@@ -14,7 +14,7 @@ splitter = RecursiveCharacterTextSplitter(
 )
 
 
-def save_faiss(index, chunks, path="vector_store"):
+def save_faiss(index, chunks, path="vector_score"):
     os.makedirs(path, exist_ok=True)
 
     faiss.write_index(index, f"{path}/index.faiss")
@@ -22,7 +22,7 @@ def save_faiss(index, chunks, path="vector_store"):
     with open(f"{path}/chunks.json", "w", encoding="utf-8") as f:
         json.dump(chunks, f, ensure_ascii=False, indent=2)
 
-def load_faiss(path="vector_store"):
+def load_faiss(path="vector_score"):
     index = faiss.read_index(f"{path}/index.faiss")
 
     with open(f"{path}/chunks.json", "r", encoding="utf-8") as f:
@@ -62,5 +62,12 @@ def file_embedding(file_list: list):
     
     return index, chunks
 
-file_list = ['.pdf', 'sample_test_document.pdf']
+def get_pdf_files(folder):
+    files = []
+    for file in os.listdir(folder):
+        if file.lower().endswith(".pdf"):
+            files.append(os.path.join(folder, file))
+    return files
+
+file_list = get_pdf_files("pdfs")
 file_embedding(file_list)  
