@@ -2,3 +2,4 @@ venv/
 .env
 *.index
 vector_score/
+__pycahe__/

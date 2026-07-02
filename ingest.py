@@ -69,5 +69,6 @@ def get_pdf_files(folder):
             files.append(os.path.join(folder, file))
     return files
 
-file_list = get_pdf_files("pdfs")
-file_embedding(file_list)  
+if __name__=="__main__":
+    file_list = get_pdf_files("pdfs")
+    file_embedding(file_list)  
