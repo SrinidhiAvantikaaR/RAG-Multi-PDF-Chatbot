@@ -38,3 +38,45 @@ def retrieve_chunks(question,k=3):
         })
     return retrieved_chunks
 
+def get_answer(query, chat_history=None):
+    retrieved_chunks = retrieve_chunks(query)
+    context = "\n\n".join(chunk["text"] for chunk in retrieved_chunks)
+    history = ""
+
+    if chat_history:
+        for ques, ans in chat_history[-3:]:
+            history += f"User : {ques}\nAssistant: {ans}\n"
+    
+    prompt = f"""
+You are a helpful PDF question-answering assistant.
+
+Answer ONLY using the provided context.
+
+If the answer is not found in the given context, give a reply like,
+"I don't find any answer in the given documents."
+
+Chat Conversation History:
+{history}
+
+Context:
+{context}
+
+Question:
+{query}
+
+Answer:
+"""
+    
+    response = llm.generate_content(prompt)
+
+    sources = []
+    for chunk in retrieved_chunks:
+        metadata = chunk["metadata"]
+        sources.append({
+            "file": metadata["file"],
+            "page": metadata["page"],
+            "chunk": metadata["c_id"]
+        })
+    
+    return {"answer": response.text,
+            "sources": sources}
