@@ -2,80 +2,163 @@ const chatBox = document.getElementById("chatBox");
 
 let history = [];
 
-function addMessage(text, cls){
+function addMessage(text, cls, sources = []) {
 
     const div = document.createElement("div");
 
     div.className = "message " + cls;
 
-    div.innerHTML = `<span>${text}</span>`;
+    let html = `<div class="bubble">${text}</div>`;
+
+    if (sources.length > 0) {
+
+        html += `<div class="source"><b>Sources:</b><br>`;
+
+        sources.forEach(s => {
+
+            html += `${s.file} | Page ${s.page} | Chunk ${s.chunk}<br>`;
+
+        });
+
+        html += "</div>";
+    }
+
+    div.innerHTML = html;
 
     chatBox.appendChild(div);
 
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-document.getElementById("uploadBtn").onclick = async ()=>{
+
+// ---------------- Upload PDFs ----------------
+
+document.getElementById("uploadBtn").onclick = async () => {
 
     const files = document.getElementById("pdfFiles").files;
 
-    if(files.length===0){
-        alert("Select PDFs");
+    if (files.length === 0) {
+
+        alert("Select at least one PDF.");
+
         return;
     }
 
     const formData = new FormData();
 
-    for(let f of files)
-        formData.append("files",f);
+    for (let file of files) {
 
-    document.getElementById("status").innerHTML="Uploading...";
+        formData.append("files", file);
 
-    const res = await fetch("http://localhost:8000/upload",{
-        method:"POST",
-        body:formData
-    });
+    }
 
-    const data = await res.json();
+    document.getElementById("status").innerHTML = "Uploading PDFs...";
 
-    document.getElementById("status").innerHTML=data.message;
-};
+    try {
 
-document.getElementById("sendBtn").onclick = async ()=>{
+        const response = await fetch("http://127.0.0.1:8000/upload", {
 
-    const question = document.getElementById("question").value;
+            method: "POST",
 
-    if(question==="") return;
+            body: formData
 
-    addMessage(question,"user");
+        });
 
-    document.getElementById("question").value="";
+        const data = await response.json();
 
-    const res = await fetch("http://localhost:8000/chat",{
+        document.getElementById("status").innerHTML = data.message;
 
-        method:"POST",
+    }
 
-        headers:{
-            "Content-Type":"application/json"
-        },
+    catch (err) {
 
-        body:JSON.stringify({
+        document.getElementById("status").innerHTML = "Upload Failed.";
 
-            question:question,
-
-            history:history
-
-        })
-
-    });
-
-    const data = await res.json();
-
-    addMessage(data.answer.answer,"bot");
-
-    history.push({
-        user:question,
-        assistant:data.answer.answer
-    });
+    }
 
 };
+
+
+// ---------------- Chat ----------------
+
+async function sendMessage() {
+
+    const input = document.getElementById("question");
+
+    const question = input.value.trim();
+
+    if (question === "") return;
+
+    addMessage(question, "user");
+
+    input.value = "";
+
+    addMessage("Thinking...", "bot");
+
+    try {
+
+        const response = await fetch("http://127.0.0.1:8000/chat", {
+
+            method: "POST",
+
+            headers: {
+
+                "Content-Type": "application/json"
+
+            },
+
+            body: JSON.stringify({
+
+                question: question,
+
+                history: history
+
+            })
+
+        });
+
+        const data = await response.json();
+
+        chatBox.removeChild(chatBox.lastChild);
+
+        addMessage(
+
+            data.answer,
+
+            "bot",
+
+            data.sources
+
+        );
+
+        history.push({
+
+            user: question,
+
+            assistant: data.answer
+
+        });
+
+    }
+
+    catch (err) {
+
+        chatBox.removeChild(chatBox.lastChild);
+
+        addMessage("Server Error!", "bot");
+
+    }
+
+}
+
+document.getElementById("sendBtn").onclick = sendMessage;
+
+document.getElementById("question").addEventListener("keypress", function (e) {
+
+    if (e.key === "Enter") {
+
+        sendMessage();
+
+    }
+
+});
