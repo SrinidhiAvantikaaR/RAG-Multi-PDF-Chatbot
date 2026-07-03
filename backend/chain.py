@@ -12,10 +12,9 @@ genai.configure(api_key=api_key)
 
 llm=genai.GenerativeModel("gemini-2.5-flash")
 
-index, chunks=load_faiss()
 model=SentenceTransformer("all-MiniLM-L6-v2")
 
-def retrieve_chunks(question,k=3):
+def retrieve_chunks(question, index, chunks, k=3):
     query_embedding=model.encode(question)
 
     query_embedding=np.array(
@@ -39,13 +38,16 @@ def retrieve_chunks(question,k=3):
     return retrieved_chunks
 
 def get_answer(query, chat_history=None):
-    retrieved_chunks = retrieve_chunks(query)
+    index, chunks=load_faiss()
+    retrieved_chunks = retrieve_chunks(query, index, chunks)
     context = "\n\n".join(chunk["text"] for chunk in retrieved_chunks)
     history = ""
 
-    if chat_history:
-        for ques, ans in chat_history[-3:]:
-            history += f"User : {ques}\nAssistant: {ans}\n"
+    for item in chat_history[-3:]:
+        history += (
+            f"User: {item['user']}\n"
+            f"Assistant: {item['assistant']}\n"
+        )
     
     prompt = f"""
 You are a helpful PDF question-answering assistant.

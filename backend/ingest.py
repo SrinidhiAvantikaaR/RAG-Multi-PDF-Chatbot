@@ -70,5 +70,5 @@ def get_pdf_files(folder):
     return files
 
 if __name__=="__main__":
-    file_list = get_pdf_files("pdfs")
+    file_list = get_pdf_files("uploads")
     file_embedding(file_list)  
